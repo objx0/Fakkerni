@@ -1,5 +1,6 @@
 package com.fakarni.app.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.time.Instant
@@ -33,6 +34,12 @@ data class Reminder(
     val category: ReminderCategory = ReminderCategory.PERSONAL,
     val recurrenceAnchorDay: Int? = null,
     val lastNotifiedAt: Long? = null,
+    /** Habits are logged several times a day instead of being completed once. */
+    @ColumnInfo(defaultValue = "0") val isHabit: Boolean = false,
+    /** How many logs a day complete the habit (e.g. 8 glasses of water). */
+    @ColumnInfo(defaultValue = "1") val dailyGoal: Int = 1,
+    /** Minutes before [date] to notify ("نبّهني قبلها"); 0 means on time. */
+    @ColumnInfo(defaultValue = "0") val leadMinutes: Int = 0,
 ) {
     fun anchorDay(zoneId: ZoneId = ZoneId.systemDefault()): Int =
         recurrenceAnchorDay

@@ -21,6 +21,7 @@ import com.fakarni.app.R
 import com.fakarni.app.data.CompletionEvent
 import com.fakarni.app.data.Reminder
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -33,6 +34,7 @@ fun WeeklyStatsCard(
     events: List<CompletionEvent>,
     modifier: Modifier = Modifier,
 ) {
+    val locale = LocalContext.current.resources.configuration.locales[0]
     val zone = ZoneId.systemDefault()
     val today = LocalDate.now(zone)
     val dates = (6 downTo 0).map { today.minusDays(it.toLong()) }
@@ -45,10 +47,8 @@ fun WeeklyStatsCard(
     var cursor = if (today in healthDates) today else today.minusDays(1)
     while (cursor in healthDates) { streak++; cursor = cursor.minusDays(1) }
 
-    Column(
-        modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(MaterialTheme.colorScheme.surface).padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
+    GlossySurface(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp)) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.weekly_progress), Modifier.weight(1f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.habit_streak, streak), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
@@ -61,10 +61,11 @@ fun WeeklyStatsCard(
                             Modifier.width(18.dp).height((48f * counts[index] / maxCount).coerceAtLeast(5f).dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.primary),
                         )
                     }
-                    Text(date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("ar")), style = MaterialTheme.typography.labelSmall)
+                    Text(date.dayOfWeek.getDisplayName(TextStyle.SHORT, locale), style = MaterialTheme.typography.labelSmall)
                 }
             }
         }
         Text(stringResource(R.string.weekly_completed_count, counts.sum()), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        }
     }
 }

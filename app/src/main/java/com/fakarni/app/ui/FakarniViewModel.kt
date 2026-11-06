@@ -33,6 +33,11 @@ class FakarniViewModel(private val application: FakarniApplication) : ViewModel(
     }
 
     fun toggleDone(reminder: Reminder) = viewModelScope.launch {
+        if (reminder.isHabit) {
+            application.reminderRepository.recordCompletion(reminder.id)
+            WidgetUpdater.updateAll(application)
+            return@launch
+        }
         val updated = reminder.copy(
             done = !reminder.done,
             lastNotifiedAt = if (reminder.done) null else reminder.lastNotifiedAt,
@@ -41,6 +46,19 @@ class FakarniViewModel(private val application: FakarniApplication) : ViewModel(
         if (updated.done) application.reminderRepository.recordCompletion(reminder.id)
         if (updated.done) application.alarmScheduler.cancel(updated.id)
         else application.alarmScheduler.schedule(updated)
+        WidgetUpdater.updateAll(application)
+    }
+
+    /** Logs one step of a habit (one glass, one dose…). */
+    fun logHabit(reminder: Reminder) = viewModelScope.launch {
+        application.reminderRepository.recordCompletion(reminder.id)
+        WidgetUpdater.updateAll(application)
+    }
+
+    /** Removes today's most recent log of a habit, for accidental taps. */
+    fun undoHabit(reminder: Reminder) = viewModelScope.launch {
+        val startOfDay = java.time.LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        application.reminderRepository.removeLatestCompletion(reminder.id, startOfDay)
         WidgetUpdater.updateAll(application)
     }
 

@@ -1,16 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Glass bell (concept D). Everything sits inside the 66dp adaptive-icon safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Flat geometric bell, kept inside Android's adaptive icon safe zone. -->
+    <!-- Soft shadow under the bell -->
+    <path android:pathData="M30,69a24,6 0,1 0,48 0a24,6 0,1 0,-48 0z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="54" android:centerY="69" android:gradientRadius="24">
+                <item android:offset="0" android:color="#4046328C" />
+                <item android:offset="1" android:color="#0046328C" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Glass body -->
     <path
-        android:fillColor="#FFC928"
-        android:pathData="M54,20C50.7,20 48,22.7 48,26V28.1C39.7,30.7 34,38.5 34,48V59.8L29,68.8C27.7,71.2 29.4,74 32.1,74H75.9C78.6,74 80.3,71.2 79,68.8L74,59.8V48C74,38.5 68.3,30.7 60,28.1V26C60,22.7 57.3,20 54,20Z" />
+        android:pathData="M54,30C43,30 37,38 37,49V60L32,67H76L71,60V49C71,38 65,30 54,30Z"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.4"
+        android:strokeLineJoin="round">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="37" android:startY="30" android:endX="76" android:endY="67">
+                <item android:offset="0" android:color="#F5FFFFFF" />
+                <item android:offset="0.6" android:color="#C2FFFFFF" />
+                <item android:offset="1" android:color="#8FE4DEFF" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Rim shade -->
+    <path android:fillColor="#2646328C" android:pathData="M37,60L32,67H76L71,60Z" />
+    <!-- Specular highlight -->
     <path
-        android:fillColor="#F9AB00"
-        android:pathData="M29.5,67.9L29,68.8C27.7,71.2 29.4,74 32.1,74H75.9C78.6,74 80.3,71.2 79,68.8L78.5,67.9C69.7,70 38.3,70 29.5,67.9ZM47,78C47.8,84 50.4,88 54,88C57.6,88 60.2,84 61,78Z" />
+        android:pathData="M42,50C42,42 46,37 52,36"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round" />
+    <!-- Clapper -->
+    <path android:fillColor="#1B1530" android:pathData="M49,74a5,5 0,1 0,10 0a5,5 0,1 0,-10 0z" />
+    <!-- Notification dot -->
     <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M43,37A4,4 0,1 0,43 45A4,4 0,1 0,43 37" />
+        android:pathData="M62,33a7,7 0,1 0,14 0a7,7 0,1 0,-14 0z"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="62" android:startY="26" android:endX="76" android:endY="40">
+                <item android:offset="0" android:color="#FFFF9A6B" />
+                <item android:offset="1" android:color="#FFF0506E" />
+            </gradient>
+        </aapt:attr>
+    </path>
 </vector>

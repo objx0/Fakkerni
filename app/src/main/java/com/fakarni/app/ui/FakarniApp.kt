@@ -2,75 +2,82 @@ package com.fakarni.app.ui
 
 import android.app.Activity
 import android.content.Context
+import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.EventNote
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fakarni.app.R
+import com.fakarni.app.ui.components.FakIcons
 import com.fakarni.app.data.Reminder
+import com.fakarni.app.ui.components.GlassBackground
+import com.fakarni.app.ui.components.glass
+import com.fakarni.app.ui.screens.HabitsScreen
 import com.fakarni.app.ui.screens.HomeScreen
 import com.fakarni.app.ui.screens.ReminderListScreen
 import com.fakarni.app.ui.screens.SettingsScreen
 import com.fakarni.app.ui.theme.FakarniTheme
+import com.fakarni.app.ui.theme.LocalGlass
 import com.fakarni.app.ui.theme.ThemeMode
+
+private const val TAB_TODAY = 0
+private const val TAB_HABITS = 1
+private const val TAB_ALL = 2
+private const val TAB_SETTINGS = 3
 
 @Composable
 fun FakarniApp(
@@ -91,7 +98,9 @@ fun FakarniApp(
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var tabBackStack by rememberSaveable { mutableStateOf(listOf(0)) }
     var showAddDialog by remember { mutableStateOf(false) }
+    var addAsHabit by remember { mutableStateOf(false) }
     var editingReminder by remember { mutableStateOf<Reminder?>(null) }
+    var pendingDelete by remember { mutableStateOf<Reminder?>(null) }
     var themeMode by rememberSaveable { mutableStateOf(ThemeMode.valueOf(preferences.getString("theme_mode", "SYSTEM") ?: "SYSTEM")) }
     val tabStateHolder = rememberSaveableStateHolder()
     val view = LocalView.current
@@ -109,21 +118,19 @@ fun FakarniApp(
 
     SideEffect {
         val window = (view.context as? Activity)?.window ?: return@SideEffect
+        val systemDark = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val isDark = themeMode == ThemeMode.DARK || (themeMode == ThemeMode.SYSTEM && systemDark)
         WindowCompat.getInsetsController(window, view).apply {
-        val isDark = themeMode == ThemeMode.DARK || (themeMode == ThemeMode.SYSTEM && (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES)
-        isAppearanceLightStatusBars = !isDark
-        isAppearanceLightNavigationBars = !isDark
+            isAppearanceLightStatusBars = !isDark
+            isAppearanceLightNavigationBars = !isDark
         }
     }
 
     FakarniTheme(themeMode, language != "en") {
-        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        GlassBackground {
             val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
             val navigationBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-            val screenPadding = PaddingValues(
-                top = statusBarPadding,
-                bottom = navigationBarPadding + 96.dp,
-            )
+            val screenPadding = PaddingValues(top = statusBarPadding, bottom = navigationBarPadding + 96.dp)
             Crossfade(
                 targetState = selectedTab,
                 modifier = Modifier.fillMaxSize(),
@@ -132,9 +139,32 @@ fun FakarniApp(
             ) { tab ->
                 tabStateHolder.SaveableStateProvider(tab) {
                     when (tab) {
-                        0 -> HomeScreen(reminders, screenPadding, { showAddDialog = true }, viewModel::toggleDone, { selectTab(2) }, viewModel::snooze, viewModel::delete, completionEvents)
-                        1 -> ReminderListScreen(reminders, screenPadding, viewModel::toggleDone, viewModel::delete, { editingReminder = it }, viewModel::snooze)
-                        2 -> SettingsScreen(
+                        TAB_TODAY -> HomeScreen(
+                            reminders = reminders,
+                            completionEvents = completionEvents,
+                            contentPadding = screenPadding,
+                            onAdd = { addAsHabit = false; showAddDialog = true },
+                            onToggle = viewModel::toggleDone,
+                            onEdit = { editingReminder = it },
+                            onSnooze = viewModel::snooze,
+                            onOpenSettings = { selectTab(TAB_SETTINGS) },
+                            onOpenHabits = { selectTab(TAB_HABITS) },
+                        )
+                        TAB_HABITS -> HabitsScreen(
+                            reminders = reminders,
+                            completionEvents = completionEvents,
+                            contentPadding = screenPadding,
+                            onLog = viewModel::logHabit,
+                            onUndo = viewModel::undoHabit,
+                            onEdit = { editingReminder = it },
+                            onAddHabit = { addAsHabit = true; showAddDialog = true },
+                        )
+                        TAB_ALL -> ReminderListScreen(reminders, completionEvents, screenPadding, viewModel::toggleDone) { editingReminder = it }
+                        TAB_SETTINGS -> SettingsScreen(
+                            onBack = {
+                                tabBackStack = tabBackStack.dropLast(1).ifEmpty { listOf(TAB_TODAY) }
+                                selectedTab = tabBackStack.last()
+                            },
                             contentPadding = screenPadding,
                             themeMode = themeMode,
                             onThemeModeChanged = {
@@ -151,48 +181,84 @@ fun FakarniApp(
                     }
                 }
             }
+            // Content fades out before it reaches the dock, so the bar never sits on busy text.
+            val fade = LocalGlass.current.base
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(navigationBarPadding + 120.dp)
+                    .background(Brush.verticalGradient(listOf(fade.copy(alpha = 0f), fade.copy(alpha = .78f), fade.copy(alpha = .94f)))),
+            )
             FloatingDock(
                 selectedTab = selectedTab,
                 onTabSelected = ::selectTab,
-                onAdd = { showAddDialog = true },
+                onAdd = { addAsHabit = selectedTab == TAB_HABITS; showAddDialog = true },
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
 
         if (showAddDialog) {
-            AddReminderDialog(onDismiss = { showAddDialog = false }) {
+            AddReminderDialog(startAsHabit = addAsHabit, onDismiss = { showAddDialog = false }) {
                 viewModel.save(it)
                 showAddDialog = false
             }
         }
         editingReminder?.let { reminder ->
-            AddReminderDialog(initial = reminder, onDismiss = { editingReminder = null }) {
+            AddReminderDialog(
+                initial = reminder,
+                onDismiss = { editingReminder = null },
+                onDelete = {
+                    editingReminder = null
+                    pendingDelete = reminder
+                },
+            ) {
                 viewModel.save(it)
                 editingReminder = null
             }
         }
+        pendingDelete?.let { reminder ->
+            AlertDialog(
+                onDismissRequest = { pendingDelete = null },
+                icon = { Icon(FakIcons.Trash, contentDescription = null) },
+                title = { Text(stringResource(R.string.delete_reminder_title)) },
+                text = { Text(stringResource(R.string.delete_reminder_message, reminder.title)) },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            pendingDelete = null
+                            viewModel.delete(reminder)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError),
+                    ) { Text(stringResource(R.string.delete)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingDelete = null }) { Text(stringResource(R.string.cancel)) }
+                },
+                shape = RoundedCornerShape(32.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
+            )
+        }
         if (showNotificationPermissionPrompt) {
             AlertDialog(
                 onDismissRequest = dismissNotificationPermissionPrompt,
-                icon = { Icon(Icons.Default.NotificationsActive, contentDescription = null) },
+                icon = { Icon(FakIcons.Bell, contentDescription = null) },
                 title = { Text(stringResource(R.string.notification_permission_title)) },
                 text = { Text(stringResource(R.string.notification_permission_message)) },
                 confirmButton = {
-                    Button(onClick = requestNotificationPermission) {
-                        Text(stringResource(R.string.enable_notifications))
-                    }
+                    Button(onClick = requestNotificationPermission) { Text(stringResource(R.string.enable_notifications)) }
                 },
                 dismissButton = {
-                    TextButton(onClick = dismissNotificationPermissionPrompt) {
-                        Text(stringResource(R.string.not_now))
-                    }
+                    TextButton(onClick = dismissNotificationPermissionPrompt) { Text(stringResource(R.string.not_now)) }
                 },
-                shape = RoundedCornerShape(28.dp),
+                shape = RoundedCornerShape(32.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
             )
         }
     }
 }
 
+/** Floating glass tab bar with the add action split off into its own ink orb. */
 @Composable
 private fun FloatingDock(
     selectedTab: Int,
@@ -200,97 +266,71 @@ private fun FloatingDock(
     onAdd: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val glass = LocalGlass.current
     Row(
-        modifier = modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 18.dp, vertical = 10.dp),
+        modifier = modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp, vertical = 14.dp).height(66.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        val destinations = listOf(
-            Triple(R.string.nav_home, Icons.Default.Home, 0),
-            Triple(R.string.nav_reminders, Icons.AutoMirrored.Filled.EventNote, 1),
-            Triple(R.string.nav_settings, Icons.Default.Settings, 2),
-        )
-        Surface(
-            modifier = Modifier.weight(1f).height(68.dp),
-            shape = RoundedCornerShape(26.dp),
-            color = MaterialTheme.colorScheme.primaryContainer,
-            shadowElevation = 12.dp,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = .18f)),
+        Row(
+            Modifier.weight(1f).fillMaxHeight().dockGlass(RoundedCornerShape(33.dp)).padding(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(Modifier.fillMaxWidth().padding(7.dp), verticalAlignment = Alignment.CenterVertically) {
-                destinations.forEach { (label, icon, index) ->
-                    DockItem(
-                        label = stringResource(label),
-                        icon = icon,
-                        selected = selectedTab == index,
-                        onClick = { onTabSelected(index) },
-                    )
-                }
-            }
+            DockItem(stringResource(R.string.today), FakIcons.Today, selectedTab == TAB_TODAY) { onTabSelected(TAB_TODAY) }
+            DockItem(stringResource(R.string.nav_habits), FakIcons.Flame, selectedTab == TAB_HABITS) { onTabSelected(TAB_HABITS) }
+            DockItem(stringResource(R.string.category_all), FakIcons.List, selectedTab == TAB_ALL) { onTabSelected(TAB_ALL) }
         }
-        Surface(
-            onClick = onAdd,
-            modifier = Modifier.size(68.dp),
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.primary,
-            shadowElevation = 12.dp,
+        Box(
+            Modifier
+                .size(66.dp)
+                .shadow(16.dp, CircleShape, ambientColor = glass.shadow, spotColor = glass.shadow)
+                .clip(CircleShape)
+                .background(glass.ink, CircleShape)
+                .clickable(role = Role.Button, onClickLabel = stringResource(R.string.add_reminder), onClick = onAdd),
+            contentAlignment = Alignment.Center,
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.Add, stringResource(R.string.add), tint = Color.White, modifier = Modifier.size(32.dp))
-            }
+            Icon(FakIcons.Plus, contentDescription = stringResource(R.string.add_reminder), tint = glass.onInk, modifier = Modifier.size(28.dp))
         }
     }
 }
 
+/**
+ * Near-opaque glass for the dock. Without a real backdrop blur, a see-through
+ * bar shows sharp text behind it, so this keeps only a hint of tint.
+ */
 @Composable
-private fun androidx.compose.foundation.layout.RowScope.DockItem(
-    label: String,
-    icon: ImageVector,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    val animatedWeight by animateFloatAsState(
-        targetValue = if (selected) 1.35f else .825f,
-        animationSpec = tween(220),
-        label = "dock-item-width",
-    )
-    val indicatorColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = .14f) else Color.Transparent,
-        animationSpec = tween(180),
-        label = "dock-item-indicator",
-    )
-    val iconColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = .58f),
-        animationSpec = tween(180),
-        label = "dock-item-icon",
-    )
+private fun Modifier.dockGlass(shape: RoundedCornerShape): Modifier {
+    val glass = LocalGlass.current
+    val surface = MaterialTheme.colorScheme.surface
+    return this
+        .shadow(18.dp, shape, ambientColor = glass.shadow.copy(alpha = if (glass.isDark) .5f else .22f), spotColor = glass.shadow.copy(alpha = if (glass.isDark) .5f else .22f))
+        .clip(shape)
+        .background(Brush.verticalGradient(listOf(surface.copy(alpha = .97f), surface.copy(alpha = .92f))), shape)
+        .background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary.copy(alpha = .05f), Color.Transparent)), shape)
+        .border(1.dp, Brush.verticalGradient(listOf(glass.highlight, glass.edge.copy(alpha = glass.edge.alpha * .4f))), shape)
+}
 
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.weight(animatedWeight).fillMaxHeight(),
-        shape = RoundedCornerShape(20.dp),
-        color = indicatorColor,
+@Composable
+private fun RowScope.DockItem(label: String, icon: ImageVector, selected: Boolean, onClick: () -> Unit) {
+    val lens by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = .14f) else Color.Transparent,
+        animationSpec = tween(180),
+        label = "dock-lens",
+    )
+    val tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    Column(
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(27.dp))
+            .background(lens)
+            .semantics { this.selected = selected }
+            .clickable(role = Role.Tab, onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 7.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                modifier = Modifier.size(24.dp),
-                tint = iconColor,
-            )
-            AnimatedVisibility(
-                visible = selected,
-                enter = fadeIn(tween(120)) + expandHorizontally(tween(180)),
-                exit = fadeOut(tween(80)) + shrinkHorizontally(tween(160)),
-            ) {
-                Row {
-                    Spacer(Modifier.width(6.dp))
-                    Text(label, maxLines = 1, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                }
-            }
-        }
+        Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp), tint = tint)
+        Text(label, maxLines = 1, style = MaterialTheme.typography.labelSmall, color = tint)
     }
 }

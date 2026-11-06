@@ -32,7 +32,9 @@ class AlarmScheduler(
             cancel(reminder.id)
             return
         }
-        val triggerAt = reminder.date.coerceAtLeast(System.currentTimeMillis() + MINIMUM_DELAY_MS)
+        // Alert early when asked to; never schedule in the past.
+        val triggerAt = (reminder.date - reminder.leadMinutes * 60_000L)
+            .coerceAtLeast(System.currentTimeMillis() + MINIMUM_DELAY_MS)
         val pendingIntent = triggerPendingIntent(reminder.id)
         if (canScheduleExactAlarms()) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)

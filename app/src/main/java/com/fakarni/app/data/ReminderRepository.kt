@@ -50,6 +50,11 @@ class ReminderRepository(
         dao.insertCompletion(CompletionEvent(reminderId = reminderId, completedAt = completedAt))
     }
 
+    suspend fun removeLatestCompletion(reminderId: Long, since: Long) {
+        initialize()
+        dao.deleteLatestCompletion(reminderId, since)
+    }
+
     private suspend fun migrateLegacyData() {
         val prefs = context.getSharedPreferences("reminders", Context.MODE_PRIVATE)
         if (prefs.getBoolean(KEY_MIGRATED, false)) return
@@ -87,7 +92,7 @@ class ReminderRepository(
         return listOf(
             Reminder(1, "تغيير زيت السيارة", "كل ٣ أشهر", now + TimeUnit.DAYS.toMillis(2), "🚗", category = ReminderCategory.CAR),
             Reminder(2, "مراجعة اشتراك Netflix", "تأكد من التجديد أو الإلغاء", now + TimeUnit.DAYS.toMillis(5), "🎬", category = ReminderCategory.SUBSCRIPTIONS),
-            Reminder(3, "اشرب ماء", "كوب ماء", now + TimeUnit.HOURS.toMillis(1), "💧", category = ReminderCategory.HEALTH),
+            Reminder(3, "اشرب ماء", "كوب ماء", now + TimeUnit.HOURS.toMillis(1), "💧", recurrence = Recurrence.DAILY, category = ReminderCategory.HEALTH, isHabit = true, dailyGoal = 8),
         ).map { it.copy(recurrenceAnchorDay = it.anchorDay()) }
     }
 

@@ -82,9 +82,14 @@ class NotificationReceiver : BroadcastReceiver() {
         application: FakarniApplication,
         reminder: Reminder,
     ) {
-        application.reminderRepository.save(reminder.copy(done = true))
-        application.reminderRepository.recordCompletion(reminder.id)
-        application.alarmScheduler.cancel(reminder.id)
+        if (reminder.isHabit) {
+            // A habit stays active; "done" from the notification logs one more step.
+            application.reminderRepository.recordCompletion(reminder.id)
+        } else {
+            application.reminderRepository.save(reminder.copy(done = true))
+            application.reminderRepository.recordCompletion(reminder.id)
+            application.alarmScheduler.cancel(reminder.id)
+        }
         context.getSystemService(NotificationManager::class.java).cancel(notificationId(reminder.id))
         WidgetUpdater.updateAll(context)
     }
@@ -105,8 +110,12 @@ class NotificationReceiver : BroadcastReceiver() {
 
         val contentIntent = PendingIntent.getActivity(
             context,
-            0,
-            Intent(context, MainActivity::class.java),
+            requestCode(reminder.id, ACTION_OPEN),
+            Intent(context, MainActivity::class.java).apply {
+                action = ACTION_OPEN
+                data = Uri.parse("fakarni://reminder/${reminder.id}/$ACTION_OPEN")
+                putExtra(EXTRA_REMINDER_ID, reminder.id)
+            },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val snooze = actionPendingIntent(context, ACTION_SNOOZE, reminder.id)
@@ -132,17 +141,21 @@ class NotificationReceiver : BroadcastReceiver() {
         }
         return PendingIntent.getBroadcast(
             context,
-            (id xor (id ushr 32)).toInt(),
+            requestCode(id, action),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
     }
+
+    private fun requestCode(id: Long, action: String): Int =
+        ((id xor (id ushr 32)).toInt() * 31) + action.hashCode()
 
     companion object {
         const val ACTION_TRIGGER = "com.fakarni.app.action.TRIGGER"
         const val ACTION_SNOOZE_TRIGGER = "com.fakarni.app.action.SNOOZE_TRIGGER"
         const val ACTION_SNOOZE = "com.fakarni.app.action.SNOOZE"
         const val ACTION_COMPLETE = "com.fakarni.app.action.COMPLETE"
+        const val ACTION_OPEN = "com.fakarni.app.action.OPEN"
         const val EXTRA_REMINDER_ID = "reminder_id"
         private const val CHANNEL_ID = "fakarni_reminders"
 

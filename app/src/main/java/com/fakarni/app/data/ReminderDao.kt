@@ -33,6 +33,12 @@ interface ReminderDao {
     @Insert
     suspend fun insertCompletion(event: CompletionEvent)
 
+    @Query(
+        "DELETE FROM completion_events WHERE id = (SELECT id FROM completion_events " +
+            "WHERE reminderId = :reminderId AND completedAt >= :since ORDER BY completedAt DESC LIMIT 1)",
+    )
+    suspend fun deleteLatestCompletion(reminderId: Long, since: Long)
+
     @Query("SELECT * FROM completion_events ORDER BY completedAt DESC")
     fun observeCompletionEvents(): Flow<List<CompletionEvent>>
 }
